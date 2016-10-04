@@ -21,9 +21,15 @@ public class GameManager : MonoBehaviour {
     public Sprite FoxImage;
     public Sprite PigImage;
 
+    public Image TeamColor;
+
     public Button QRCode;
     public int cooldownTime = 20;
     private int cooldown;
+
+    public string Team;
+    public bool startGame;
+    public bool QRLoaded = false;
 
     private Animal[] animals;
 
@@ -57,9 +63,28 @@ public class GameManager : MonoBehaviour {
         animals[4] = Pig;
     }
 
-    public void ScanQRCode()
+    public void ScanQRCode(bool startgame)
     {
+        startGame = startgame;
         SceneManager.LoadScene("QRScanner", LoadSceneMode.Additive);
+    }
+
+    public void AssignTeam(string team)
+    {
+        Team = team;
+        if (team == "Team 1")
+            TeamColor.color = Color.blue;
+        else if (team == "Team 2")
+            TeamColor.color = Color.yellow;
+    }
+
+    public void ClearRole()
+    {
+        You.enabled = false;
+        Prey1.enabled = false;
+        Prey2.enabled = false;
+        Hunter1.enabled = false;
+        Hunter2.enabled = false;
     }
 
     public void AssignNewRole()
@@ -70,6 +95,12 @@ public class GameManager : MonoBehaviour {
 
         if (animals.Length == 0)
             Debug.LogError("Animal list is empty");
+
+        You.enabled = true;
+        Prey1.enabled = true;
+        Prey2.enabled = true;
+        Hunter1.enabled = true;
+        Hunter2.enabled = true;
 
         int random = UnityEngine.Random.Range(0, 5);
         You.sprite = animals[random].Image;

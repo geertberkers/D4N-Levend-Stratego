@@ -25,9 +25,9 @@ namespace dZine4D.Misc.QR
         [SerializeField]
         [Tooltip("An optional RawImage component to display the camera feed.")]
         private RawImage OutputImage = null;
-        [SerializeField]
-        [Tooltip("An optional text component to display the last qr decoding result.")]
-        private Text OutputText = null;
+        //[SerializeField]
+        //[Tooltip("An optional text component to display the last qr decoding result.")]
+        //private Text OutputText = null;
         [SerializeField]
         [Tooltip("Should we start decoding on awake?")]
         private bool EnableOnAwake = true;
@@ -42,9 +42,15 @@ namespace dZine4D.Misc.QR
         private bool isQuit;
         private bool isReaderEnabled;
 
+        public GameObject WrongQR;
+
         private string prevResult;
 
         private bool scanned = false;
+        private bool newGame = false;
+        private bool wrong = false;
+
+        Result result;
 
         // .. EVENTS
 
@@ -107,13 +113,37 @@ namespace dZine4D.Misc.QR
             OutputRenderer.material.mainTexture = camTexture;
         }
 
+        void OnSceneLoaded()
+        {
+            GameManager.Instance.QRLoaded = true;
+        }
 
+        IEnumerator WaitWrong()
+        {
+            yield return new WaitForSeconds(1.5f);
+            GameManager.Instance.ClearRole();
+            SceneManager.UnloadScene("QRScanner");
+        }
 
         void Update()
         {
+            if (wrong)
+            {
+                WrongQR.SetActive(true);
+                StartCoroutine(WaitWrong());
+            }
+
+            if (newGame)
+            {
+                newGame = false;
+                GameManager.Instance.startGame = false;
+                GameManager.Instance.AssignTeam(result.ToString());
+                GameManager.Instance.AssignNewRole();
+                SceneManager.UnloadScene("QRScanner");
+            }
+
             if (scanned)
             {
-                Debug.Log("call manager");
                 scanned = false;
                 GameManager.Instance.AssignNewRole();
                 SceneManager.UnloadScene("QRScanner");
@@ -133,8 +163,8 @@ namespace dZine4D.Misc.QR
                 if (OnQrCodeDetected != null)
                     OnQrCodeDetected.Invoke(prevResult);
 
-                if (OutputText != null)
-                    OutputText.text = LastResult;
+                //if (OutputText != null)
+                //    OutputText.text = LastResult;
             }
         }
 
@@ -169,9 +199,19 @@ namespace dZine4D.Misc.QR
                 try
                 {
                     // decode the current frame
-                    var result = barcodeReader.Decode(cameraFeedGrab, W, H);
+                    result = barcodeReader.Decode(cameraFeedGrab, W, H);
                     if (result != null)
                     {
+                        if (GameManager.Instance.startGame)
+                            newGame = true;
+
+                        if (result.ToString() != GameManager.Instance.Team)
+                        {
+                            wrong = true;
+                            Debug.Log("result: " + result.ToString());
+                            return;
+                        } 
+
                         LastResult = result.Text;
                         print(result.Text);
                         scanned = true;
