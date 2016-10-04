@@ -21,6 +21,10 @@ public class GameManager : MonoBehaviour {
     public Sprite FoxImage;
     public Sprite PigImage;
 
+    public Button QRCode;
+    public int cooldownTime = 20;
+    private int cooldown;
+
     private Animal[] animals;
 
     Animal Rabbit = new Animal();
@@ -60,6 +64,10 @@ public class GameManager : MonoBehaviour {
 
     public void AssignNewRole()
     {
+        cooldown = cooldownTime;
+        QRCode.interactable = false;
+        StartCoroutine(Cooldown());
+
         if (animals.Length == 0)
             Debug.LogError("Animal list is empty");
 
@@ -69,5 +77,19 @@ public class GameManager : MonoBehaviour {
         Prey2.sprite = animals[random].Prey2.Image;
         Hunter1.sprite = animals[random].Hunter1.Image;
         Hunter2.sprite = animals[random].Hunter2.Image;
+    }
+
+    IEnumerator Cooldown()
+    {
+        while (cooldown >= 0)
+        {
+            QRCode.GetComponentInChildren<Text>().text = cooldown.ToString();
+            Debug.Log("set text");
+            yield return new WaitForSeconds(1f);
+            cooldown--;
+            Debug.Log("cd --");
+        }
+        QRCode.interactable = true;
+        QRCode.GetComponentInChildren<Text>().text = "Scan QR";
     }
 }
