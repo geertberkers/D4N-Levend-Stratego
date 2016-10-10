@@ -121,6 +121,6 @@ public class GameManager : MonoBehaviour {
             Debug.Log("cd --");
         }
         QRCode.interactable = true;
-        QRCode.GetComponentInChildren<Text>().text = "Scan QR";
+        QRCode.GetComponentInChildren<Text>().text = "Nieuw Dier";
     }
 }
