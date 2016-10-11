@@ -3,6 +3,7 @@ package fhict.design4nature.levendstratego;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
@@ -20,18 +21,26 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.firebase.iid.FirebaseInstanceId;
+import com.google.firebase.messaging.FirebaseMessaging;
+
+import java.util.concurrent.ExecutionException;
+
+import fhict.design4nature.levendstratego.datahandlers.GetCurrentLocationTask;
+import fhict.design4nature.levendstratego.datahandlers.SendNotificationTask;
 
 /**
  * Created by fhict.
  */
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
 
-    // Static fields for GPS listener
-    private final static int MIN_DISTANCE_BETWEEN_UPDATES = 0;
-    private final static int MIN_TIME_INTERVAL_BETWEEN_UPDATES = 1000;
+    // Static fields FCM topic
+    // Change this if multiple users are testing application.
+    private static final String TOPIC = "game";
 
-    // Static LatLng for zooming into  map
-    private static final LatLng EINDHOVEN = new LatLng(51.45184971, 5.4820988);
+    // Static fields for GPS listener
+    private final static int MIN_DISTANCE_BETWEEN_UPDATES = 1;
+    private final static int MIN_TIME_INTERVAL_BETWEEN_UPDATES = 1000;
 
     private Button stopGame;
     private Button gpsButton;
@@ -39,8 +48,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private TextView gpsInfo;
     private TextView flagInfo;
 
-    private static Marker flagMarker;
-    private static GoogleMap googleMap;
+    private Marker flagMarker;
+    private GoogleMap googleMap;
 
     private LocationManager locationManager;
     private GPSLocationListener locationListener;
@@ -95,6 +104,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         System.out.println("onDestroy");
         locationManager.removeUpdates(locationListener);
         vibrator.cancel();
+
+
         super.onDestroy();
     }
 
@@ -140,48 +151,56 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        System.out.println("FIREBASE TOKEN:" + FirebaseInstanceId.getInstance().getToken());
+        FirebaseMessaging.getInstance().subscribeToTopic(TOPIC);
+
         stopGame = (Button) findViewById(R.id.stopGame);
         gpsButton = (Button) findViewById(R.id.gpsButton);
 
         gpsInfo = (TextView) findViewById(R.id.gpsInfo);
         flagInfo = (TextView) findViewById(R.id.flagInfo);
 
-        locationListener = new GPSLocationListener(flagInfo, gpsInfo);
+        locationListener = new GPSLocationListener(gpsInfo);
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
         MapFragment mapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
         vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-
-    }
-
-    public static void addFlagMarker(Location location) {
-        LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-        MarkerOptions marker = new MarkerOptions().position(latLng).title("Vlag");
-        flagMarker = googleMap.addMarker(marker);
     }
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
+        Location currentLocation = getCurrentLocation();
+
+        LatLng currentLatLng = new LatLng(
+                currentLocation.getLatitude(),
+                currentLocation.getLongitude()
+        );
+
         googleMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
         googleMap.setMyLocationEnabled(true);
         googleMap.getUiSettings().setZoomControlsEnabled(true);
-        googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(EINDHOVEN, 15));
+        googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 15));
 
-        MainActivity.googleMap = googleMap;
+        this.googleMap = googleMap;
     }
 
     public void hideFlag(View view) {
         if (view.getId() == gpsButton.getId()) {
             if (gpsButton.getText().toString().equals(getString(R.string.hide_flag))) {
-                locationListener.newGame();
+                Location flagLocation = getCurrentLocation();
+
+                addFlagMarker(flagLocation);
+                locationListener.newGame(flagLocation);
 
                 gpsButton.setText(R.string.start_game);
-                //TODO: Get gps once and show it. now it shows on else
+                stopGame.setEnabled(true);
+
+                //TODO: Send Flag to other device using FCM
+
             } else {
                 gpsButton.setText(R.string.flag_hidden);
-                stopGame.setEnabled(true);
                 gpsButton.setEnabled(false);
 
                 locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
@@ -203,10 +222,73 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             flagInfo.setText(R.string.flag_info);
             gpsInfo.setText(R.string.gps_info);
 
-            flagMarker.remove();
+            if(flagMarker != null) {
+                flagMarker.remove();
+            }
+
+            vibrator.cancel();
+
+            sendNotification("Levend Stratego", "Het spel is afgelopen! Kom terug.");
+
         }
     }
 
+    //TODO: Make static to use it on other classes?
+    private void sendNotification(String title, String text){
+        String sound = "default";
+        String priority = "high";
+
+        try {
+            String result = new SendNotificationTask(TOPIC, title, text, sound, priority).execute("https://fcm.googleapis.com/fcm/send").get();
+            System.out.println(result);
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Get current location by requesting a single location update.
+     * @return lastKnownLocation which is curent location
+     */
+    private Location getCurrentLocation() {
+        Location currentLocation;
+
+        try {
+            currentLocation = new GetCurrentLocationTask().execute(locationManager).get();
+
+            if(currentLocation == null){
+                throw new NullPointerException("currentLocation is null!");
+            }
+        } catch (InterruptedException | ExecutionException | NullPointerException e) {
+            e.printStackTrace();
+
+            String provider = locationManager.getBestProvider(new Criteria(), true);
+            currentLocation = locationManager.getLastKnownLocation(provider);
+        }
+
+        return currentLocation;
+    }
+
+    /**
+     * Add flagMarker on googleMap
+     * @param flagLocation location of the flag
+     */
+    private void addFlagMarker(Location flagLocation){
+        LatLng latLng = new LatLng(flagLocation.getLatitude(), flagLocation.getLongitude());
+        MarkerOptions marker = new MarkerOptions().position(latLng).title("Vlag");
+        flagMarker = googleMap.addMarker(marker);
+
+        String latitude = "Latitude: " + flagLocation.getLatitude();
+        String longitude = "Longitude: " + flagLocation.getLongitude();
+        String flagInfoText = "Flag info:\n" + longitude + "\n" + latitude + "\n";
+
+        flagInfo.setText(flagInfoText);
+    }
+
+    /**
+     * Sent vibrations as hint to user
+     * @param distance used to determine vibration patterns
+     */
     public static void sendHintVibration(float distance) {
         //TODO: Find good patterns for sending hints
         if (distance < 2.5) {

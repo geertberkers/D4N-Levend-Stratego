@@ -5,48 +5,37 @@ import android.location.LocationListener;
 import android.os.Bundle;
 import android.widget.TextView;
 
+import fhict.design4nature.levendstratego.MainActivity;
+
 /**
  * Created by fhict.
  */
-public class GPSLocationListener implements LocationListener {
+class GPSLocationListener implements LocationListener {
 
-    private boolean flagDropped;
-
+    private final TextView gpsInfo;
     private Location flagLocation;
 
-    private TextView gpsInfo;
-    private TextView flagInfo;
-
-    public GPSLocationListener(TextView flagInfo, TextView gpsInfo) {
+    public GPSLocationListener(TextView gpsInfo) {
         this.gpsInfo = gpsInfo;
-        this.flagInfo = flagInfo;
     }
 
-
-    public void newGame() {
-        flagDropped = false;
+    public void newGame(Location flagLocation) {
+        this.flagLocation = flagLocation;
     }
 
     @Override
     public void onLocationChanged(Location location) {
+        float distance = calculateDistanceToFlag(location);
+
         String longitude = "Longitude: " + location.getLongitude();
         String latitude = "Latitude: " + location.getLatitude();
 
-        if (!flagDropped) {
-            flagLocation = location;
-            MainActivity.addFlagMarker(location);
-            flagInfo.setText("Flag info:\n" + longitude + "\n" + latitude + "\n");
-            flagDropped = true;
-            return;
-        }
-
-        //TODO: Handle result of timer, give tips for hidden flag. (sound/vibrate)
-        float distance = calculateDistanceToFlag(location);
-
         System.out.println(longitude);
         System.out.println(latitude);
+        System.out.println("Distance: " + distance + " m");
 
-        gpsInfo.setText("GPS info:\n" + longitude + "\n" + latitude + "\nDistance to flag: " + distance);
+        String gpsInfoText = "GPS info:\n" + longitude + "\n" + latitude + "\nDistance to flag: " + distance;
+        gpsInfo.setText(gpsInfoText);
 
         sentHintVibration(distance);
     }
@@ -81,4 +70,5 @@ public class GPSLocationListener implements LocationListener {
     private void sentHintVibration(float distance) {
         MainActivity.sendHintVibration(distance);
     }
+
 }
