@@ -5,11 +5,6 @@ import android.location.LocationListener;
 import android.os.Bundle;
 import android.widget.TextView;
 
-import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.Marker;
-import com.google.android.gms.maps.model.MarkerOptions;
-
 /**
  * Created by fhict.
  */
@@ -22,13 +17,13 @@ public class GPSLocationListener implements LocationListener {
     private TextView gpsInfo;
     private TextView flagInfo;
 
-    public GPSLocationListener(TextView flagInfo, TextView gpsInfo){
+    public GPSLocationListener(TextView flagInfo, TextView gpsInfo) {
         this.gpsInfo = gpsInfo;
         this.flagInfo = flagInfo;
     }
 
 
-    public void newGame(){
+    public void newGame() {
         flagDropped = false;
     }
 
@@ -37,7 +32,7 @@ public class GPSLocationListener implements LocationListener {
         String longitude = "Longitude: " + location.getLongitude();
         String latitude = "Latitude: " + location.getLatitude();
 
-        if(!flagDropped){
+        if (!flagDropped) {
             flagLocation = location;
             MainActivity.addFlagMarker(location);
             flagInfo.setText("Flag info:\n" + longitude + "\n" + latitude + "\n");
@@ -51,7 +46,9 @@ public class GPSLocationListener implements LocationListener {
         System.out.println(longitude);
         System.out.println(latitude);
 
-        gpsInfo.setText("GPS info:\n"+ longitude + "\n" + latitude + "\nDistance to flag: " + distance);
+        gpsInfo.setText("GPS info:\n" + longitude + "\n" + latitude + "\nDistance to flag: " + distance);
+
+        sentHintVibration(distance);
     }
 
     @Override
@@ -69,7 +66,7 @@ public class GPSLocationListener implements LocationListener {
         System.out.println("Provider disabled: " + s);
     }
 
-    private float calculateDistanceToFlag(Location currentLocation){
+    private float calculateDistanceToFlag(Location currentLocation) {
         float[] results = new float[1];
         Location.distanceBetween(
                 flagLocation.getLatitude(),
@@ -79,5 +76,9 @@ public class GPSLocationListener implements LocationListener {
                 results);
 
         return results[0];
+    }
+
+    private void sentHintVibration(float distance) {
+        MainActivity.sendHintVibration(distance);
     }
 }

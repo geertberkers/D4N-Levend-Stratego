@@ -1,9 +1,13 @@
 package fhict.design4nature.levendstratego;
 
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.Vibrator;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
@@ -41,6 +45,96 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private LocationManager locationManager;
     private GPSLocationListener locationListener;
 
+    private static Vibrator vibrator;
+
+    // region Android Activity Lifecycle...
+
+    // http://www.javatpoint.com/images/androidimages/Android-Activity-Lifecycle.png
+
+    /**
+     * Called after onCreate, when app opened or when screen unlocked
+     */
+    @Override
+    protected void onStart() {
+        System.out.println("onStart");
+        super.onStart();
+    }
+
+    /**
+     * Called after onStart
+     */
+    @Override
+    protected void onResume() {
+        System.out.println("onResume");
+        super.onResume();
+    }
+
+    /**
+     * Called before onStop
+     */
+    @Override
+    protected void onPause() {
+        System.out.println("onPause");
+        super.onPause();
+    }
+
+    /**
+     * Called on minimize or screen locked
+     */
+    @Override
+    protected void onStop() {
+        System.out.println("onStop");
+        super.onStop();
+    }
+
+    /***
+     * Called when application finished!
+     */
+    @Override
+    protected void onDestroy() {
+        System.out.println("onDestroy");
+        locationManager.removeUpdates(locationListener);
+        vibrator.cancel();
+        super.onDestroy();
+    }
+
+    /***
+     * Override onBackPressed to let the user decide what happens with the application when someone tries to close it.
+     */
+    @Override
+    public void onBackPressed() {
+
+        AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
+        dialogBuilder.setTitle("Applicatie sluiten");
+        dialogBuilder.setMessage("Weet u zeker dat u de app wilt sluiten?\nDit beëindigd het spel!");
+        dialogBuilder.setCancelable(true);
+
+        dialogBuilder.setNeutralButton("Ja", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                finish();
+            }
+        });
+
+        dialogBuilder.setPositiveButton("Minimaliseer", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                Intent startMain = new Intent(Intent.ACTION_MAIN);
+                startMain.addCategory(Intent.CATEGORY_HOME);
+                startMain.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(startMain);
+            }
+        });
+        dialogBuilder.setNegativeButton("Nee", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                dialog.cancel();
+            }
+        });
+
+        AlertDialog alertDialog = dialogBuilder.create();
+        alertDialog.show();
+    }
+    // endregion
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -57,6 +151,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         MapFragment mapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
+        vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+
     }
 
     public static void addFlagMarker(Location location) {
@@ -77,17 +174,21 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     public void hideFlag(View view) {
         if (view.getId() == gpsButton.getId()) {
-            locationListener.newGame();
+            if (gpsButton.getText().toString().equals(getString(R.string.hide_flag))) {
+                locationListener.newGame();
 
-            stopGame.setEnabled(true);
-            gpsButton.setEnabled(false);
-            gpsButton.setText(getString(R.string.flag_hidden));
+                gpsButton.setText(R.string.start_game);
+                //TODO: Get gps once and show it. now it shows on else
+            } else {
+                gpsButton.setText(R.string.flag_hidden);
+                stopGame.setEnabled(true);
+                gpsButton.setEnabled(false);
 
-            //TODO: Wait for game to start
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
-                    MIN_TIME_INTERVAL_BETWEEN_UPDATES,
-                    MIN_DISTANCE_BETWEEN_UPDATES,
-                    locationListener);
+                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
+                        MIN_TIME_INTERVAL_BETWEEN_UPDATES,
+                        MIN_DISTANCE_BETWEEN_UPDATES,
+                        locationListener);
+            }
         }
     }
 
@@ -96,7 +197,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             stopGame.setEnabled(false);
             gpsButton.setEnabled(true);
 
-            gpsButton.setText(getString(R.string.hide_flag));
+            gpsButton.setText(R.string.hide_flag);
             locationManager.removeUpdates(locationListener);
 
             flagInfo.setText(R.string.flag_info);
@@ -106,10 +207,14 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
     }
 
-    @Override
-    protected void onStop() {
-        locationManager.removeUpdates(locationListener);
-
-        super.onStop();
+    public static void sendHintVibration(float distance) {
+        //TODO: Find good patterns for sending hints
+        if (distance < 2.5) {
+            long pattern[] = {0, 1000, 200, 1000, 200};
+            vibrator.vibrate(pattern, 0);
+        } else if(distance < 10){
+            long pattern[] = {0, 200, 200, 200, 200};
+            vibrator.vibrate(pattern, 1);
+        }
     }
 }
