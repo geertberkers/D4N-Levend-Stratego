@@ -3,18 +3,24 @@ package fhict.design4nature.levendstratego;
 import android.location.Location;
 import android.location.LocationListener;
 import android.os.Bundle;
+import android.widget.TextView;
 
 /**
  * Created by fhict.
  */
-class GPSLocationListener implements LocationListener {
+class GPSLocationListenerSelfTest implements LocationListener {
 
+    private TextView gpsInfo;
     private Location flagLocation;
 
     private boolean flagFound;
     private boolean flagLost;
 
-    public GPSLocationListener() {
+    public GPSLocationListenerSelfTest() {
+    }
+
+    public GPSLocationListenerSelfTest(TextView gpsInfo) {
+        this.gpsInfo = gpsInfo;
     }
 
     public void newGame(Location flagLocation) {
@@ -33,6 +39,9 @@ class GPSLocationListener implements LocationListener {
         System.out.println(longitude);
         System.out.println(latitude);
         System.out.println("Distance: " + distance + " m");
+
+        String gpsInfoText = "GPS info:\n" + longitude + "\n" + latitude + "\nDistance to flag: " + distance;
+        gpsInfo.setText(gpsInfoText);
 
         if(!flagFound&&!flagLost) {
             sentHintVibration(distance);
@@ -77,7 +86,4 @@ class GPSLocationListener implements LocationListener {
         MainActivity.sendHintVibration(distance);
     }
 
-    public void setFlagLocation(Location flagLocation) {
-        this.flagLocation = flagLocation;
-    }
 }
