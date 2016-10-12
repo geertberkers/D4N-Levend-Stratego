@@ -36,6 +36,12 @@
             android:layout_height="wrap_content"
             android:text="@string/gps_info"
             android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
+        <TextView
+            android:id="@+id/flagStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Vlag gevonden:"
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
     </LinearLayout>
 
     <fragment
@@ -48,10 +54,19 @@
 
     <Button
         android:id="@+id/stopGame"
+        android:layout_above="@+id/lostFlag"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:onClick="stopGame"
+        android:enabled="false"
+        android:text="@string/stop_game" />
+
+    <Button
+        android:id="@+id/lostFlag"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:enabled="false"
-        android:onClick="stopGame"
-        android:text="@string/stop_game" />
+        android:onClick="lostFlag"
+        android:text="Vlag verloren"></Button>
 </RelativeLayout>

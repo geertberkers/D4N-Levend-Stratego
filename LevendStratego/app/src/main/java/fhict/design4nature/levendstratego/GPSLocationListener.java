@@ -15,12 +15,17 @@ class GPSLocationListener implements LocationListener {
     private final TextView gpsInfo;
     private Location flagLocation;
 
+    private boolean flagFound;
+    private boolean flagLost;
+
     public GPSLocationListener(TextView gpsInfo) {
         this.gpsInfo = gpsInfo;
     }
 
     public void newGame(Location flagLocation) {
         this.flagLocation = flagLocation;
+        this.flagFound = false;
+        this.flagLost = false;
     }
 
     @Override
@@ -37,7 +42,16 @@ class GPSLocationListener implements LocationListener {
         String gpsInfoText = "GPS info:\n" + longitude + "\n" + latitude + "\nDistance to flag: " + distance;
         gpsInfo.setText(gpsInfoText);
 
-        sentHintVibration(distance);
+        if(!flagFound&&!flagLost) {
+            sentHintVibration(distance);
+        }
+        if(distance < 2.5)
+            flagFound = true;
+    }
+
+    public void flagLost(boolean lost)
+    {
+        this.flagLost = lost;
     }
 
     @Override

@@ -40,13 +40,18 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     // Static fields for GPS listener
     private final static int MIN_DISTANCE_BETWEEN_UPDATES = 1;
-    private final static int MIN_TIME_INTERVAL_BETWEEN_UPDATES = 1000;
+    private final static int MIN_TIME_INTERVAL_BETWEEN_UPDATES = 5000;
 
     private Button stopGame;
     private Button gpsButton;
+    private static Button lostFlag;
+
 
     private TextView gpsInfo;
     private TextView flagInfo;
+    private static TextView flagStatus;
+
+    private boolean flagFound;
 
     private Marker flagMarker;
     private GoogleMap googleMap;
@@ -156,9 +161,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         stopGame = (Button) findViewById(R.id.stopGame);
         gpsButton = (Button) findViewById(R.id.gpsButton);
+        lostFlag = (Button) findViewById(R.id.lostFlag);
 
         gpsInfo = (TextView) findViewById(R.id.gpsInfo);
         flagInfo = (TextView) findViewById(R.id.flagInfo);
+        flagStatus = (TextView) findViewById(R.id.flagStatus);
+        flagStatus.setText("Vlag gevonden: Nee");
 
         locationListener = new GPSLocationListener(gpsInfo);
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
@@ -185,7 +193,24 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         this.googleMap = googleMap;
     }
+    public void lostFlag(View view) {
+        if (view.getId() == lostFlag.getId()) {
+            locationManager.removeUpdates(locationListener);
+            flagMarker.remove();
+            Location flagLocation = getCurrentLocation();
 
+            addFlagMarker(flagLocation);
+            locationListener.newGame(flagLocation);
+            locationListener.flagLost(true);
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
+                    MIN_TIME_INTERVAL_BETWEEN_UPDATES,
+                    MIN_DISTANCE_BETWEEN_UPDATES,
+                    locationListener);
+            gpsButton.setText(R.string.start_game);
+            lostFlag.setEnabled(false);
+            gpsButton.setEnabled(true);
+        }
+    }
     public void hideFlag(View view) {
         if (view.getId() == gpsButton.getId()) {
             if (gpsButton.getText().toString().equals(getString(R.string.hide_flag))) {
@@ -292,11 +317,27 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     public static void sendHintVibration(float distance) {
         //TODO: Find good patterns for sending hints
         if (distance < 2.5) {
-            long pattern[] = {0, 1000, 200, 1000, 200};
-            vibrator.vibrate(pattern, 0);
-        } else if(distance < 10){
-            long pattern[] = {0, 200, 200, 200, 200};
-            vibrator.vibrate(pattern, 1);
+            long pattern[] = {0, 5000};
+            vibrator.vibrate(pattern, -1);
+            //flag found
+            // AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this.getApplicationContext());
+            // dialogBuilder.setTitle("Vlag gevonden");
+            // dialogBuilder.setMessage("Ga terug naar de basis!");
+            // dialogBuilder.setCancelable(true);
+            lostFlag.setEnabled(true);
+            flagStatus.setText("Vlag gevonden: Ja");
+        } else if (distance < 10) {
+            long pattern[] = {0, 100, 100, 100, 100, 100, 100, 100, 100};
+            vibrator.vibrate(pattern, -1);
+        } else if (distance < 25) {
+            long pattern[] = {0, 100, 100, 100, 100, 100, 100};
+            vibrator.vibrate(pattern, -1);
+        } else if (distance < 50) {
+            long pattern[] = {0, 100, 100, 100, 100};
+            vibrator.vibrate(pattern, -1);
+        } else {
+            long pattern[] = {0, 100};
+            vibrator.vibrate(pattern, -1);
         }
     }
 }
