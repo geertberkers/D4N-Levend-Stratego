@@ -14,12 +14,9 @@ class GPSLocationListener implements LocationListener {
     public GPSLocationListener() {
     }
 
-    public void newGame(Location flagLocation) {
-        this.flagLocation = flagLocation;
-    }
-
     @Override
     public void onLocationChanged(Location location) {
+        //TODO: Add if statement game started
         float distance = calculateDistanceToFlag(location);
 
         String longitude = "Longitude: " + location.getLongitude();

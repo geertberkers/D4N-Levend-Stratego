@@ -3,9 +3,11 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/colorAccent">
+    android:background="@color/colorAccent"
+    android:padding="@dimen/activity_horizontal_margin">
 
-    <TextView
+
+<TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center"
@@ -27,6 +29,6 @@
         android:onClick="phoneChange"
         android:padding="1dp"
         android:scaleType="centerCrop"
-        android:src="@drawable/flag_icon" />
+        android:src="@drawable/change_phone" />
 
 </RelativeLayout>
