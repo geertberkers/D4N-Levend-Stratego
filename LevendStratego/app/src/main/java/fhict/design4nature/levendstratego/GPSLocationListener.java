@@ -9,25 +9,27 @@ import android.os.Bundle;
  */
 class GPSLocationListener implements LocationListener {
 
+    private boolean gameStarted;
     private Location flagLocation;
 
     public GPSLocationListener() {
+        this.gameStarted = false;
     }
 
     @Override
     public void onLocationChanged(Location location) {
-        //TODO: Add if statement game started
-        float distance = calculateDistanceToFlag(location);
+        if(gameStarted) {
+            float distance = calculateDistanceToFlag(location);
 
-        String longitude = "Longitude: " + location.getLongitude();
-        String latitude = "Latitude: " + location.getLatitude();
+            String longitude = "Longitude: " + location.getLongitude();
+            String latitude = "Latitude: " + location.getLatitude();
 
-        System.out.println(longitude);
-        System.out.println(latitude);
-        System.out.println("Distance: " + distance + " m");
+            System.out.println(longitude);
+            System.out.println(latitude);
+            System.out.println("Distance: " + distance + " m");
 
-        sentHintVibration(distance);
-
+            sentHintVibration(distance);
+        }
     }
 
     @Override
@@ -57,11 +59,17 @@ class GPSLocationListener implements LocationListener {
         return results[0];
     }
 
+    public void setFlagLocation(Location flagLocation) {
+        this.flagLocation = flagLocation;
+    }
+
+    public void setGameStarted(boolean gameStarted) {
+        this.gameStarted = gameStarted;
+        System.out.println("Game Started:" + gameStarted);
+    }
+
     private void sentHintVibration(float distance) {
         MainActivity.sendHintVibration(distance);
     }
 
-    public void setFlagLocation(Location flagLocation) {
-        this.flagLocation = flagLocation;
-    }
 }

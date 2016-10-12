@@ -12,7 +12,7 @@
         android:gravity="center"
         android:text="Verslop vlag!"
         android:textColor="@color/white"
-        android:textSize="36dp"
+        android:textSize="36sp"
         android:textStyle="bold" />
 
 
@@ -26,6 +26,7 @@
         android:background="@drawable/border_image"
         android:cropToPadding="true"
         android:onClick="hideFlag"
+        android:contentDescription="Verstop vlag"
         android:padding="1dp"
         android:scaleType="centerCrop"
         android:src="@drawable/flag_icon" />

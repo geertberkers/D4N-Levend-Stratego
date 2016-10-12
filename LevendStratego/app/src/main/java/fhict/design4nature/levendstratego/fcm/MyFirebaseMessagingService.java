@@ -67,8 +67,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         intent.putExtra(NotificationData.TEXT, notificationData.getTextMessage());
 
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0 /* Request code */, intent,
-                PendingIntent.FLAG_ONE_SHOT);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0 /* Request code */, intent, PendingIntent.FLAG_ONE_SHOT);
 
         NotificationCompat.Builder notificationBuilder = null;
         try {

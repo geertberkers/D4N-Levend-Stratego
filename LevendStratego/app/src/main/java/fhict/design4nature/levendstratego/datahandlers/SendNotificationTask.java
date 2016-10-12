@@ -46,6 +46,7 @@ public class SendNotificationTask extends AsyncTask<String, Void, String> {
             APIConnector.closeConnection();
         }
 
+        System.out.println("AsyncTask Completed. Result: " + result);
         return result;
     }
 }
