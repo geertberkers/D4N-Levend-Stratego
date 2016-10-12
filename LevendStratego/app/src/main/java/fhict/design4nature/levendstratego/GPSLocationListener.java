@@ -11,16 +11,11 @@ class GPSLocationListener implements LocationListener {
 
     private Location flagLocation;
 
-    private boolean flagFound;
-    private boolean flagLost;
-
     public GPSLocationListener() {
     }
 
     public void newGame(Location flagLocation) {
         this.flagLocation = flagLocation;
-        this.flagFound = false;
-        this.flagLost = false;
     }
 
     @Override
@@ -34,16 +29,8 @@ class GPSLocationListener implements LocationListener {
         System.out.println(latitude);
         System.out.println("Distance: " + distance + " m");
 
-        if(!flagFound&&!flagLost) {
-            sentHintVibration(distance);
-        }
-        if(distance < 2.5)
-            flagFound = true;
-    }
+        sentHintVibration(distance);
 
-    public void flagLost(boolean lost)
-    {
-        this.flagLost = lost;
     }
 
     @Override

@@ -7,6 +7,7 @@ import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.os.Vibrator;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -51,8 +52,8 @@ public class MainActivitySelfTest extends AppCompatActivity implements OnMapRead
     private TextView flagInfo;
     private static TextView flagStatus;
 
-    private boolean flagFound;
-
+    private static boolean flagFound;
+    private static boolean gameStart;
     private Marker flagMarker;
     private GoogleMap googleMap;
 
@@ -60,6 +61,9 @@ public class MainActivitySelfTest extends AppCompatActivity implements OnMapRead
     private GPSLocationListenerSelfTest locationListener;
 
     private static Vibrator vibrator;
+
+    private static CountDownTimer timer;
+    private static boolean startTimer;
 
     // region Android Activity Lifecycle...
 
@@ -175,6 +179,23 @@ public class MainActivitySelfTest extends AppCompatActivity implements OnMapRead
         mapFragment.getMapAsync(this);
 
         vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+        gameStart = false;
+        startTimer = false;
+        timer = new CountDownTimer(10000, 1000) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                //per tick
+            }
+
+            @Override
+            public void onFinish() {
+                //capture flag
+                flagFound = true;
+                flagStatus.setText("Vlag gevonden: Ja");
+                lostFlag.setEnabled(true);
+                long pattern[] = {0, 3000};
+                vibrator.vibrate(pattern, -1);
+            }};
     }
 
     @Override
@@ -208,7 +229,11 @@ public class MainActivitySelfTest extends AppCompatActivity implements OnMapRead
                     locationListener);
             gpsButton.setText(R.string.start_game);
             lostFlag.setEnabled(false);
+            flagStatus.setText("Vlag gevonden: Nee");
             gpsButton.setEnabled(true);
+            timer.cancel();
+            flagFound = false;
+            gameStart = false;
         }
     }
     public void hideFlag(View view) {
@@ -227,7 +252,8 @@ public class MainActivitySelfTest extends AppCompatActivity implements OnMapRead
             } else {
                 gpsButton.setText(R.string.flag_hidden);
                 gpsButton.setEnabled(false);
-
+                flagFound = false;
+                gameStart = true;
                 locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
                         MIN_TIME_INTERVAL_BETWEEN_UPDATES,
                         MIN_DISTANCE_BETWEEN_UPDATES,
@@ -315,29 +341,21 @@ public class MainActivitySelfTest extends AppCompatActivity implements OnMapRead
      * @param distance used to determine vibration patterns
      */
     public static void sendHintVibration(float distance) {
-        //TODO: Find good patterns for sending hints
-        if (distance < 2.5) {
-            long pattern[] = {0, 5000};
-            vibrator.vibrate(pattern, -1);
-            //flag found
-            // AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this.getApplicationContext());
-            // dialogBuilder.setTitle("Vlag gevonden");
-            // dialogBuilder.setMessage("Ga terug naar de basis!");
-            // dialogBuilder.setCancelable(true);
-            lostFlag.setEnabled(true);
-            flagStatus.setText("Vlag gevonden: Ja");
-        } else if (distance < 10) {
-            long pattern[] = {0, 100, 100, 100, 100, 100, 100, 100, 100};
-            vibrator.vibrate(pattern, -1);
-        } else if (distance < 25) {
-            long pattern[] = {0, 100, 100, 100, 100, 100, 100};
-            vibrator.vibrate(pattern, -1);
-        } else if (distance < 50) {
-            long pattern[] = {0, 100, 100, 100, 100};
-            vibrator.vibrate(pattern, -1);
-        } else {
-            long pattern[] = {0, 100};
-            vibrator.vibrate(pattern, -1);
+        if(!flagFound && gameStart) {
+            if (distance < 2.5) {
+                if (!startTimer) {
+                    timer.start();
+                    startTimer = true;
+                }
+                long pattern[] = {0, 500, 100, 500, 100, 500, 100, 500, 100, 500, 100, 500, 100, 500};
+                vibrator.vibrate(pattern, -1);
+            } else if (distance < 10) {
+                if (startTimer) {
+                    timer.cancel();
+                }
+                long pattern[] = {0, 100};
+                vibrator.vibrate(pattern, -1);
+            }
         }
     }
 }
