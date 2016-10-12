@@ -45,6 +45,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private TextView gpsInfo;
     private TextView flagInfo;
+    private static TextView flagStatus;
 
     private static Marker flagMarker;
     private static GoogleMap googleMap;
@@ -155,6 +156,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         gpsInfo = (TextView) findViewById(R.id.gpsInfo);
         flagInfo = (TextView) findViewById(R.id.flagInfo);
+        flagStatus = (TextView) findViewById(R.id.flagStatus);
 
         locationListener = new GPSLocationListener(flagInfo, gpsInfo);
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
@@ -199,6 +201,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                                 MIN_DISTANCE_BETWEEN_UPDATES,
                                 locationListener);
                         gpsButton.setText(R.string.start_game);
+                        flagStatus.setText("Vlag gevonden: Nee");
                     }
                 } else {
                     gpsButton.setText(R.string.flag_hidden);
@@ -220,7 +223,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
             flagInfo.setText(R.string.flag_info);
             gpsInfo.setText(R.string.gps_info);
-
+            flagStatus.setText("Vlag gevonden:");
             flagMarker.remove();
         }
     }
@@ -236,6 +239,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     locationListener);
             gpsButton.setText(R.string.start_game);
             lostFlag.setEnabled(false);
+            flagStatus.setText("Vlag gevonden: Nee");
             gpsButton.setEnabled(true);
         }
 
@@ -253,6 +257,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             // dialogBuilder.setMessage("Ga terug naar de basis!");
             // dialogBuilder.setCancelable(true);
             lostFlag.setEnabled(true);
+            flagStatus.setText("Vlag gevonden: Ja");
         } else if (distance < 10) {
             long pattern[] = {0, 100, 100, 100, 100, 100, 100, 100, 100};
             vibrator.vibrate(pattern, -1);
