@@ -65,7 +65,6 @@ class GPSLocationListener implements LocationListener {
 
     public void setGameStarted(boolean gameStarted) {
         this.gameStarted = gameStarted;
-        System.out.println("Game Started:" + gameStarted);
     }
 
     private void sentHintVibration(float distance) {

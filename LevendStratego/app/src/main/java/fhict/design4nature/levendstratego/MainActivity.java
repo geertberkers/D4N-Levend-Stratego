@@ -8,8 +8,8 @@ import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.CountDownTimer;
-import android.os.Handler;
 import android.os.Vibrator;
+import android.support.multidex.MultiDex;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.view.LayoutInflater;
@@ -21,7 +21,6 @@ import android.widget.ImageView;
 import com.google.firebase.messaging.FirebaseMessaging;
 
 import java.util.concurrent.ExecutionException;
-import java.util.zip.Inflater;
 
 import fhict.design4nature.levendstratego.datahandlers.SendNotificationTask;
 
@@ -30,10 +29,12 @@ import fhict.design4nature.levendstratego.datahandlers.SendNotificationTask;
  */
 public class MainActivity extends AppCompatActivity {
 
+    // TODO: Replace strings with resources
+
     // Static fields FCM topic
-    // Change this if multiple users are testing application.
-    //TODO: Change topics for each team
+    // TODO: Change topics for each team
     private static final String TOPIC = "game";
+    private static final String OTHER_TOPIC = "game2";
 
     // Static fields for GPS listener
     private final static int MIN_DISTANCE_BETWEEN_UPDATES = 0;
@@ -76,17 +77,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setFrameView(int resId){
-        //frameLayout.removeAllViews();
-
         View view = LayoutInflater.from(this).inflate(resId,null);
-
-        //frameLayout.removeCh
+        frameLayout.removeAllViews();
         frameLayout.addView(view);
-
-
     }
+
     private void setHideFlagView() {
-        //setContentView(R.layout.hide_flag_activity);
         setFrameView(R.layout.hide_flag_activity);
         hideFlag = (ImageView) findViewById(R.id.hideFlag);
     }
@@ -99,30 +95,21 @@ public class MainActivity extends AppCompatActivity {
     private void setGameView() {
         setFrameView(R.layout.game_activity);
 
-        Handler handler = new Handler();
+        loseFlag = (Button) findViewById(R.id.loseFlag);
+        flagInfo = (ImageView) findViewById(R.id.flagInfo);
 
-        final Runnable runnable = new Runnable() {
-            public void run() {
-                loseFlag = (Button) findViewById(R.id.loseFlag);
-                flagInfo = (ImageView) findViewById(R.id.flagInfo);
+        flagFound = false;
+        gameIsStarted = true;
 
-                flagFound = false;
-                gameIsStarted = true;
+        loseFlag.setEnabled(false);
+        locationListener.setGameStarted(true);
 
-                loseFlag.setEnabled(false);
-                locationListener.setGameStarted(true);
-
-                flagInfo.setImageResource(R.drawable.flag_icon_false);
-            }
-        };
-
-        handler.postDelayed(runnable, 1000);
+        flagInfo.setImageResource(R.drawable.flag_icon_false);
     }
 
     private void setBackToBaseView() {
         setFrameView(R.layout.back_to_base_activity);
         revive = (ImageView) findViewById(R.id.revive);
-
     }
 
     private void subscribeToFireBaseTopic(String topic) {
@@ -140,7 +127,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onTick(long millisUntilFinished) {
                 // Tick
-                // TODO: Vibrate in here instead of in sendHintVibration()
+                // TODO: Vibrate in here instead of in sendHintVibration()?
             }
 
             @Override
@@ -160,73 +147,60 @@ public class MainActivity extends AppCompatActivity {
         if (view.getId() == hideFlag.getId()) {
             locationListener.setFlagLocation(getCurrentLocation());
             setChangePhoneView();
-//            setLayoutView(R.layout.change_phone_activity);
         }
     }
 
     public void phoneChange(View view) {
         if (view.getId() == phoneChange.getId()) {
             setGameView();
-//            setLayoutView(R.layout.game_activity);
         }
     }
 
-    // TODO Fix code, Skipped x frames! The application may be doing too much work on its main thread.
-    // TODO: Send notification flag is recovered?
+    // TODO: Send notification flag is lost?
     public void loseFlag(View view) {
         if (view.getId() == loseFlag.getId()) {
-
-         //   Intent baseActivity = new Intent(this, BackToBaseActivity.class);
-        //    startActivity(baseActivity);
             setBackToBaseView();
-            //setLayoutView(R.layout.back_to_base_activity);
 
-            Handler handler = new Handler();
-
-            final Runnable runnable = new Runnable() {
-                public void run() {
-                    timer.cancel();
-                    flagFound = false;
-                    gameIsStarted = false;
-                    timerIsRunning = false;
-                    locationListener.setGameStarted(false);
-                    locationListener.setFlagLocation(getCurrentLocation());
-                    flagInfo.setImageResource(R.drawable.flag_icon_false);
-
-                }
-            };
-
-            handler.postDelayed(runnable, 1000);
+            timer.cancel();
+            flagFound = false;
+            gameIsStarted = false;
+            timerIsRunning = false;
+            locationListener.setGameStarted(false);
+            locationListener.setFlagLocation(getCurrentLocation());
+            flagInfo.setImageResource(R.drawable.flag_icon_false);
         }
     }
 
     public void revive(View view) {
         if (view.getId() == revive.getId()) {
             setGameView();
-            //setLayoutView(R.layout.game_activity);
-            //Intent baseActivity = new Intent(this, BackToBaseActivity.class);
-            //startActivity(baseActivity);
         }
     }
 
     private void flagCaptured() {
-        System.out.println("Flag Captured");
         flagFound = true;
         loseFlag.setEnabled(true);
+
         long pattern[] = {0, 3000};
         vibrator.vibrate(pattern, -1);
+
         flagInfo.setImageResource(R.drawable.flag_icon_true);
 
         sendNotification("Vlag gepakt!", "Probeer te verdedigen!");
     }
 
-
+    /**
+     * Send notification to other device
+     *
+     * @param title notifications title
+     * @param text notifications text
+     */
     private void sendNotification(String title, String text) {
         String sound = "default";
         String priority = "high";
 
         try {
-            String result = new SendNotificationTask(TOPIC, title, text, sound, priority).execute("https://fcm.googleapis.com/fcm/send").get();
+            String result = new SendNotificationTask(OTHER_TOPIC, title, text, sound, priority).execute("https://fcm.googleapis.com/fcm/send").get();
             System.out.println(result);
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
@@ -249,10 +223,6 @@ public class MainActivity extends AppCompatActivity {
      * @param distance used to determine vibration patterns
      */
     public static void sendHintVibration(float distance) {
-        System.out.println("Flag found: " + flagFound);
-        System.out.println("Game started: " + gameIsStarted);
-        System.out.println("Timer running: " + timerIsRunning);
-
         if (!flagFound && gameIsStarted) {
             if (distance < 2.5) {
                 if (!timerIsRunning) {
@@ -281,6 +251,8 @@ public class MainActivity extends AppCompatActivity {
         locationManager.removeUpdates(locationListener);
         vibrator.cancel();
         timer.cancel();
+
+        //TODO: Kill notification if there is one
 
         super.onDestroy();
     }
@@ -319,8 +291,15 @@ public class MainActivity extends AppCompatActivity {
 
             AlertDialog alertDialog = dialogBuilder.create();
             alertDialog.show();
+        } else {
+            finish();
         }
     }
 
+    @Override
+    protected void attachBaseContext(Context newBase) {
+        super.attachBaseContext(newBase);
+        MultiDex.install(this);
+    }
 
 }

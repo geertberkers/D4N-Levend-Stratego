@@ -1,9 +1,3 @@
 <resources>
     <string name="app_name">Levend Stratego</string>
-    <string name="hide_flag">Verstop vlag!</string>
-    <string name="flag_hidden">Vlag verstopt!</string>
-    <string name="stop_game">Stop spel</string>
-    <string name="flag_info">Vlag info:\nLongitude: \nLatitude:\n</string>
-    <string name="gps_info">GPS info:\nLongitude: \nLatitude:\nDistance:</string>
-    <string name="start_game">Start spel!</string>
 </resources>

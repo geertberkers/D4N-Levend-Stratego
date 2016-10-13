@@ -7,6 +7,7 @@
     android:padding="@dimen/activity_horizontal_margin">
 
     <TextView
+        android:id="@+id/pocketText"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center"
@@ -16,17 +17,20 @@
         android:textStyle="bold" />
 
     <ImageView
-        android:id="@+id/pocket"
-        android:layout_width="300dp"
-        android:layout_height="300dp"
-        android:scaleType="fitCenter"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/linearLayout"
+        android:layout_below="@+id/pocketText"
         android:layout_centerHorizontal="true"
+        android:contentDescription="Telefoon in broekzak!"
+        android:scaleType="fitCenter"
         android:src="@drawable/pocket_icon" />
 
     <LinearLayout
+        android:id="@+id/linearLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/pocket"
+        android:layout_alignParentBottom="true"
         android:layout_centerVertical="true"
         android:orientation="horizontal"
         android:weightSum="1">
@@ -38,7 +42,7 @@
             android:layout_weight="0.5"
             android:contentDescription="Vlag informatie"
             android:scaleType="fitCenter"
-            android:src="@drawable/flag_icon" />
+            android:src="@drawable/flag_icon_false" />
 
         <Button
             android:id="@+id/loseFlag"
@@ -47,8 +51,7 @@
             android:layout_weight="0.5"
             android:enabled="false"
             android:onClick="loseFlag"
-            android:text="Verlies" />
-
+            android:text="Verlies\nvlag" />
     </LinearLayout>
 
 </RelativeLayout>
