@@ -9,6 +9,7 @@ import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Vibrator;
 import android.support.multidex.MultiDex;
 import android.support.v7.app.AlertDialog;
@@ -18,6 +19,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import com.google.firebase.messaging.FirebaseMessaging;
 
@@ -44,19 +47,29 @@ public class MainActivity extends AppCompatActivity {
     private ImageView hideFlag;
     private ImageView flagInfo;
     private ImageView phoneChange;
+
+    private static ProgressBar pb;
+
     private static Button loseFlag;
+
+    private TextView tv_timer;
 
     private FrameLayout frameLayout;
 
     private LocationManager locationManager;
-    private GPSLocationListener locationListener;
+    private static GPSLocationListener locationListener;
 
     private static Vibrator vibrator;
     private static CountDownTimer timer;
+    private static CountDownTimer waitTimer;
+    private int timerSec = 20;
 
     private static boolean flagFound;
     private static boolean gameIsStarted;
     private static boolean timerIsRunning;
+
+    private static boolean flagPlaced;
+    private static boolean enemyFlagPlaced;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,6 +81,8 @@ public class MainActivity extends AppCompatActivity {
 
         gameIsStarted = false;
         timerIsRunning = false;
+        flagPlaced = false;
+        enemyFlagPlaced = false;
 
         subscribeToFireBaseTopic(TOPIC);
         unSubscribeToFireBaseTopic(OTHER_TOPIC);
@@ -112,6 +127,12 @@ public class MainActivity extends AppCompatActivity {
         revive = (ImageView) findViewById(R.id.revive);
     }
 
+    private void setWaitFlagView(){
+        setFrameView(R.layout.wait_flag_placed_activity);
+        tv_timer = (TextView) findViewById(R.id.tv_timer);
+        pb = (ProgressBar)findViewById(R.id.wait_progressBar);
+    }
+
     private void subscribeToFireBaseTopic(String topic) {
         System.out.println("Subscribed to " + topic);
         FirebaseMessaging.getInstance().subscribeToTopic(topic);
@@ -141,6 +162,20 @@ public class MainActivity extends AppCompatActivity {
                 flagCaptured();
             }
         };
+
+        waitTimer = new CountDownTimer(20000, 1000) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                timerSec--;
+                tv_timer.setText(Integer.toString(timerSec));
+
+            }
+
+            @Override
+            public void onFinish() {
+                setGameView();
+            }
+        };
     }
 
     private void startGPSListener() {
@@ -152,8 +187,39 @@ public class MainActivity extends AppCompatActivity {
 
     public void hideFlag(View view) {
         if (view.getId() == hideFlag.getId()) {
-            locationListener.setFlagLocation(getCurrentLocation());
-            setChangePhoneView();
+            //locationListener.setFlagLocation(getCurrentLocation());
+            //setChangePhoneView();
+            setWaitFlagView();
+            String latitude = Double.toString(getCurrentLocation().getLatitude());
+            String longitude = Double.toString(getCurrentLocation().getLongitude());
+            sendNotification("Het andere team heeft de vlag geplaatst",latitude+","+ longitude, OTHER_TOPIC);
+            flagPlaced = true;
+            if(enemyFlagPlaced) {
+                pb.setVisibility(View.INVISIBLE);
+                waitTimer.start();
+            }
+        }
+    }
+    public static Handler UIHandler = new Handler(Looper.getMainLooper());
+
+    public static void enemyHideFlag(String location){
+        String[] split = location.split(",");
+        String latitude = split[0];
+        String longitude = split[1];
+        Location flag = new Location("");
+        flag.setLatitude(Double.valueOf(latitude));
+        flag.setLongitude(Double.valueOf(longitude));
+        locationListener.setFlagLocation(flag);
+        enemyFlagPlaced = true;
+        if(flagPlaced){
+            UIHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    pb.setVisibility(View.INVISIBLE);
+                    waitTimer.start();
+                }
+            });
+
         }
     }
 
@@ -168,18 +234,6 @@ public class MainActivity extends AppCompatActivity {
         if (view.getId() == loseFlag.getId()) {
 
             confirmLostFlag();
-
-            if(!flagFound) {
-                setBackToBaseView();
-
-                timer.cancel();
-                //flagFound = false;
-                gameIsStarted = false;
-                timerIsRunning = false;
-                locationListener.setGameStarted(false);
-                locationListener.setFlagLocation(getCurrentLocation());
-                flagInfo.setImageResource(R.drawable.flag_icon_false);
-            }
         }
     }
 
@@ -194,7 +248,14 @@ public class MainActivity extends AppCompatActivity {
 
         dialogBuilder.setNeutralButton("Ja", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int id) {
+                setBackToBaseView();
+                timer.cancel();
                 flagFound = false;
+                gameIsStarted = false;
+                timerIsRunning = false;
+                locationListener.setGameStarted(false);
+                locationListener.setFlagLocation(getCurrentLocation());
+                flagInfo.setImageResource(R.drawable.flag_icon_false);
             }
         });
 
@@ -225,7 +286,7 @@ public class MainActivity extends AppCompatActivity {
 
         flagInfo.setImageResource(R.drawable.flag_icon_true);
 
-        sendNotification("Vlag gepakt!", "Probeer te verdedigen!");
+        sendNotification("Vlag gepakt!", "Probeer te verdedigen!", OTHER_TOPIC);
     }
 
     /**
@@ -234,13 +295,13 @@ public class MainActivity extends AppCompatActivity {
      * @param title notifications title
      * @param text  notifications text
      */
-    private void sendNotification(final String title, final String text) {
+    private void sendNotification(final String title, final String text, final String topic) {
         String sound = "default";
         String priority = "high";
 
-        System.out.println("Sent to: " + OTHER_TOPIC);
+        System.out.println("Sent to: " + topic);
         try {
-            String result = new SendNotificationTask(OTHER_TOPIC, title, text, sound, priority).execute("https://fcm.googleapis.com/fcm/send").get();
+            String result = new SendNotificationTask(topic, title, text, sound, priority).execute("https://fcm.googleapis.com/fcm/send").get();
             System.out.println(result);
             notificationSent = true;
         } catch (InterruptedException | ExecutionException | NullPointerException e) {
@@ -251,7 +312,7 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void run() {
                     if (!notificationSent) {
-                        sendNotification(title, text);
+                        sendNotification(title, text, topic);
                     }
                 }
             };

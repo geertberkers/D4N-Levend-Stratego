@@ -52,8 +52,12 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         } catch (NullPointerException ex) {
             text = "Het spel is afgelopen!";
         }
-
-        this.sendNotification(new NotificationData(id, title, text));
+        if (!notification.getTitle().equalsIgnoreCase("Het andere team heeft de vlag geplaatst")) {
+            this.sendNotification(new NotificationData(id, title, text));
+        } else {
+            MainActivity.enemyHideFlag(notification.getBody());
+            this.sendNotification(new NotificationData(id, title, "Sta klaar om te zoeken"));
+        }
     }
 
     /**
