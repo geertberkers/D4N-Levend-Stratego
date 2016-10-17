@@ -8,6 +8,7 @@ import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.CountDownTimer;
+import android.os.Handler;
 import android.os.Vibrator;
 import android.support.multidex.MultiDex;
 import android.support.v7.app.AlertDialog;
@@ -29,16 +30,14 @@ import fhict.design4nature.levendstratego.datahandlers.SendNotificationTask;
  */
 public class MainActivity extends AppCompatActivity {
 
-    // TODO: Replace strings with resources
-
-    // Static fields FCM topic
-    // TODO: Change topics for each team
-    private static final String TOPIC = "game";
-    private static final String OTHER_TOPIC = "game2";
+    // Static fields FCM topic.
+    // Switch these after deploying to an device
+    private static final String TOPIC = "TEAM";
+    private static final String OTHER_TOPIC = "GAME";
 
     // Static fields for GPS listener
     private final static int MIN_DISTANCE_BETWEEN_UPDATES = 0;
-    private final static int MIN_TIME_INTERVAL_BETWEEN_UPDATES = 3000;
+    private final static int MIN_TIME_INTERVAL_BETWEEN_UPDATES = 1000;
 
     // private Button stopGame;
     private ImageView revive;
@@ -71,13 +70,14 @@ public class MainActivity extends AppCompatActivity {
         timerIsRunning = false;
 
         subscribeToFireBaseTopic(TOPIC);
+        unSubscribeToFireBaseTopic(OTHER_TOPIC);
 
         initControls();
         startGPSListener();
     }
 
-    private void setFrameView(int resId){
-        View view = LayoutInflater.from(this).inflate(resId,null);
+    private void setFrameView(int resId) {
+        View view = LayoutInflater.from(this).inflate(resId, null);
         frameLayout.removeAllViews();
         frameLayout.addView(view);
     }
@@ -113,7 +113,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void subscribeToFireBaseTopic(String topic) {
+        System.out.println("Subscribed to " + topic);
         FirebaseMessaging.getInstance().subscribeToTopic(topic);
+    }
+
+    private void unSubscribeToFireBaseTopic(String topic) {
+        System.out.println("Unsubscribed from " + topic);
+        FirebaseMessaging.getInstance().unsubscribeFromTopic(topic);
     }
 
     private void initControls() {
@@ -123,7 +129,7 @@ public class MainActivity extends AppCompatActivity {
 
         vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
 
-        timer = new CountDownTimer(3000, 1000) {
+        timer = new CountDownTimer(5000, 1000) {
             @Override
             public void onTick(long millisUntilFinished) {
                 // Tick
@@ -133,10 +139,11 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onFinish() {
                 flagCaptured();
-            }};
+            }
+        };
     }
 
-    private void startGPSListener(){
+    private void startGPSListener() {
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
                 MIN_TIME_INTERVAL_BETWEEN_UPDATES,
                 MIN_DISTANCE_BETWEEN_UPDATES,
@@ -159,16 +166,48 @@ public class MainActivity extends AppCompatActivity {
     // TODO: Send notification flag is lost?
     public void loseFlag(View view) {
         if (view.getId() == loseFlag.getId()) {
-            setBackToBaseView();
 
-            timer.cancel();
-            flagFound = false;
-            gameIsStarted = false;
-            timerIsRunning = false;
-            locationListener.setGameStarted(false);
-            locationListener.setFlagLocation(getCurrentLocation());
-            flagInfo.setImageResource(R.drawable.flag_icon_false);
+            confirmLostFlag();
+
+            if(!flagFound) {
+                setBackToBaseView();
+
+                timer.cancel();
+                //flagFound = false;
+                gameIsStarted = false;
+                timerIsRunning = false;
+                locationListener.setGameStarted(false);
+                locationListener.setFlagLocation(getCurrentLocation());
+                flagInfo.setImageResource(R.drawable.flag_icon_false);
+            }
         }
+    }
+
+    /***
+     * Ask user if he lost the flag. To avoid pressing button accidentally
+     */
+    public void confirmLostFlag() {
+        AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
+        dialogBuilder.setTitle("Vlag verloren");
+        dialogBuilder.setMessage("Weet u zeker dat u de vlag verloren bent?");
+        dialogBuilder.setCancelable(true);
+
+        dialogBuilder.setNeutralButton("Ja", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                flagFound = false;
+            }
+        });
+
+
+        dialogBuilder.setNegativeButton("Nee", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                flagFound = true;
+                dialog.cancel();
+            }
+        });
+
+        AlertDialog alertDialog = dialogBuilder.create();
+        alertDialog.show();
     }
 
     public void revive(View view) {
@@ -193,19 +232,37 @@ public class MainActivity extends AppCompatActivity {
      * Send notification to other device
      *
      * @param title notifications title
-     * @param text notifications text
+     * @param text  notifications text
      */
-    private void sendNotification(String title, String text) {
+    private void sendNotification(final String title, final String text) {
         String sound = "default";
         String priority = "high";
 
+        System.out.println("Sent to: " + OTHER_TOPIC);
         try {
             String result = new SendNotificationTask(OTHER_TOPIC, title, text, sound, priority).execute("https://fcm.googleapis.com/fcm/send").get();
             System.out.println(result);
-        } catch (InterruptedException | ExecutionException e) {
+            notificationSent = true;
+        } catch (InterruptedException | ExecutionException | NullPointerException e) {
+
+            Handler handler = new Handler();
+
+            Runnable runner = new Runnable() {
+                @Override
+                public void run() {
+                    if (!notificationSent) {
+                        sendNotification(title, text);
+                    }
+                }
+            };
+
+            handler.postDelayed(runner, 1000);
+
             e.printStackTrace();
         }
     }
+
+    boolean notificationSent = false;
 
     /**
      * Get current location by requesting a single location update.
@@ -224,15 +281,15 @@ public class MainActivity extends AppCompatActivity {
      */
     public static void sendHintVibration(float distance) {
         if (!flagFound && gameIsStarted) {
-            if (distance < 2.5) {
+            if (distance < 10) {
                 if (!timerIsRunning) {
                     timer.start();
                     timerIsRunning = true;
-                    //}
-                    long pattern[] = {0, 500, 100, 500, 100, 500, 100, 500/*, 100, 500, 100, 500, 100, 500*/};
-                    vibrator.vibrate(pattern, -1);
                 }
-            } else if (distance < 10) {
+                long pattern[] = {0, 500, 100, 500, 100, 500, 100, 500, 100, 500, 100, 500, 100, 500};
+                vibrator.vibrate(pattern, -1);
+                //}
+            } else if (distance < 20) {
                 if (timerIsRunning) {
                     timer.cancel();
                     timerIsRunning = false;
@@ -262,7 +319,7 @@ public class MainActivity extends AppCompatActivity {
      */
     @Override
     public void onBackPressed() {
-        if(gameIsStarted) {
+        if (gameIsStarted) {
             AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
             dialogBuilder.setTitle("Applicatie sluiten");
             dialogBuilder.setMessage("Weet u zeker dat u de app wilt sluiten?\nDit beëindigd het spel!");
@@ -291,8 +348,6 @@ public class MainActivity extends AppCompatActivity {
 
             AlertDialog alertDialog = dialogBuilder.create();
             alertDialog.show();
-        } else {
-            finish();
         }
     }
 
@@ -301,5 +356,4 @@ public class MainActivity extends AppCompatActivity {
         super.attachBaseContext(newBase);
         MultiDex.install(this);
     }
-
 }

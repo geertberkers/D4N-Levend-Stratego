@@ -24,8 +24,8 @@ class GPSLocationListener implements LocationListener {
             String longitude = "Longitude: " + location.getLongitude();
             String latitude = "Latitude: " + location.getLatitude();
 
-            System.out.println(longitude);
-            System.out.println(latitude);
+            //System.out.println(longitude);
+            //System.out.println(latitude);
             System.out.println("Distance: " + distance + " m");
 
             sentHintVibration(distance);

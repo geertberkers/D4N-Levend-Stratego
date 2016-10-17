@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">Levend Stratego</string>
+    <string name="back_to_base">Terug naar basis!</string>
+    <string name="start_game">Start game</string>
+    <string name="change_phone">Wissel telefoon!</string>
+    <string name="flag_info">Vlag informatie</string>
+    <string name="lose_flag">Verlies\nvlag</string>
+    <string name="hide_flag">Verstop vlag</string>
 </resources>

@@ -40,7 +40,7 @@
             android:layout_width="match_parent"
             android:layout_height="150dp"
             android:layout_weight="0.5"
-            android:contentDescription="Vlag informatie"
+            android:contentDescription="@string/flag_info"
             android:scaleType="fitCenter"
             android:src="@drawable/flag_icon_false" />
 
@@ -51,7 +51,7 @@
             android:layout_weight="0.5"
             android:enabled="false"
             android:onClick="loseFlag"
-            android:text="Verlies\nvlag" />
+            android:text="@string/lose_flag" />
     </LinearLayout>
 
 </RelativeLayout>

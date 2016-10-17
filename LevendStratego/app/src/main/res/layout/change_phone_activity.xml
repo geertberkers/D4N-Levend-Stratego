@@ -10,7 +10,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center"
-        android:text="Wissel telefoon!"
+        android:text="@string/change_phone"
         android:textColor="@color/white"
         android:textSize="36sp"
         android:textStyle="bold" />
@@ -28,7 +28,7 @@
         android:onClick="phoneChange"
         android:padding="1dp"
         android:scaleType="centerCrop"
-        android:contentDescription="Wissel telefoon"
+        android:contentDescription="@string/change_phone"
         android:src="@drawable/change_phone" />
 
 </RelativeLayout>
