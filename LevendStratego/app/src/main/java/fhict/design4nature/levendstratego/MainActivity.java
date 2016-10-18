@@ -53,6 +53,7 @@ public class MainActivity extends AppCompatActivity {
     private static Button loseFlag;
 
     private TextView tv_timer;
+    private static TextView tv_timer_flag;
 
     private FrameLayout frameLayout;
 
@@ -62,7 +63,9 @@ public class MainActivity extends AppCompatActivity {
     private static Vibrator vibrator;
     private static CountDownTimer timer;
     private static CountDownTimer waitTimer;
+    private static CountDownTimer waitView;
     private int timerSec = 20;
+    private static int timerFlag = 5;
 
     private static boolean flagFound;
     private static boolean gameIsStarted;
@@ -108,18 +111,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setGameView() {
-        setFrameView(R.layout.game_activity);
+        setFrameView(R.layout.phone_in_pocket);
 
-        loseFlag = (Button) findViewById(R.id.loseFlag);
-        flagInfo = (ImageView) findViewById(R.id.flagInfo);
-
-        flagFound = false;
-        gameIsStarted = true;
-
-        loseFlag.setEnabled(false);
-        locationListener.setGameStarted(true);
-
-        flagInfo.setImageResource(R.drawable.flag_icon_false);
+        waitView.start();
     }
 
     private void setBackToBaseView() {
@@ -154,12 +148,15 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onTick(long millisUntilFinished) {
                 // Tick
+                tv_timer_flag.setText(Integer.toString(timerFlag));
+                timerFlag--;
                 // TODO: Vibrate in here instead of in sendHintVibration()?
             }
 
             @Override
             public void onFinish() {
                 flagCaptured();
+                tv_timer_flag.setText("Gevonden"+ "\n"+" ga terug naar basis");
             }
         };
 
@@ -176,6 +173,30 @@ public class MainActivity extends AppCompatActivity {
                 setGameView();
             }
         };
+
+        waitView = new CountDownTimer(5000, 1000) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+
+            }
+
+            @Override
+            public void onFinish() {
+                setFrameView(R.layout.game_activity);
+
+                loseFlag = (Button) findViewById(R.id.loseFlag);
+                flagInfo = (ImageView) findViewById(R.id.flagInfo);
+                tv_timer_flag = (TextView)findViewById(R.id.tv_timer_near_flag);
+
+                flagFound = false;
+                gameIsStarted = true;
+
+                loseFlag.setEnabled(false);
+                locationListener.setGameStarted(true);
+
+                flagInfo.setImageResource(R.drawable.flag_icon_false);
+            }
+        };
     }
 
     private void startGPSListener() {
@@ -187,8 +208,6 @@ public class MainActivity extends AppCompatActivity {
 
     public void hideFlag(View view) {
         if (view.getId() == hideFlag.getId()) {
-            //locationListener.setFlagLocation(getCurrentLocation());
-            //setChangePhoneView();
             setWaitFlagView();
             String latitude = Double.toString(getCurrentLocation().getLatitude());
             String longitude = Double.toString(getCurrentLocation().getLongitude());
@@ -243,7 +262,7 @@ public class MainActivity extends AppCompatActivity {
     public void confirmLostFlag() {
         AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
         dialogBuilder.setTitle("Vlag verloren");
-        dialogBuilder.setMessage("Weet u zeker dat u de vlag verloren bent?");
+        dialogBuilder.setMessage("Weet je zeker dat je de vlag verloren bent?");
         dialogBuilder.setCancelable(true);
 
         dialogBuilder.setNeutralButton("Ja", new DialogInterface.OnClickListener() {
@@ -354,10 +373,17 @@ public class MainActivity extends AppCompatActivity {
                 if (timerIsRunning) {
                     timer.cancel();
                     timerIsRunning = false;
+                    tv_timer_flag.setText("");
+                    timerFlag = 5;
                 }
                 long pattern[] = {0, 100};
                 vibrator.vibrate(pattern, -1);
             }
+            else{ //>20
+                tv_timer_flag.setText("");
+                timerFlag = 5;
+            }
+
         }
     }
 
