@@ -87,8 +87,8 @@ public class MainActivity extends AppCompatActivity {
         flagPlaced = false;
         enemyFlagPlaced = false;
 
-        subscribeToFireBaseTopic(TOPIC);
-        unSubscribeToFireBaseTopic(OTHER_TOPIC);
+        subscribeToFireBaseTopic(OTHER_TOPIC);
+        unSubscribeToFireBaseTopic(TOPIC);
 
         initControls();
         startGPSListener();
@@ -148,8 +148,9 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onTick(long millisUntilFinished) {
                 // Tick
-                tv_timer_flag.setText(Integer.toString(timerFlag));
                 timerFlag--;
+                tv_timer_flag.setText(Integer.toString(timerFlag));
+
                 // TODO: Vibrate in here instead of in sendHintVibration()?
             }
 
@@ -211,7 +212,7 @@ public class MainActivity extends AppCompatActivity {
             setWaitFlagView();
             String latitude = Double.toString(getCurrentLocation().getLatitude());
             String longitude = Double.toString(getCurrentLocation().getLongitude());
-            sendNotification("Het andere team heeft de vlag geplaatst",latitude+","+ longitude, OTHER_TOPIC);
+            sendNotification("Het andere team heeft de vlag geplaatst",latitude+","+ longitude, TOPIC);
             flagPlaced = true;
             if(enemyFlagPlaced) {
                 pb.setVisibility(View.INVISIBLE);
@@ -305,7 +306,7 @@ public class MainActivity extends AppCompatActivity {
 
         flagInfo.setImageResource(R.drawable.flag_icon_true);
 
-        sendNotification("Vlag gepakt!", "Probeer te verdedigen!", OTHER_TOPIC);
+        sendNotification("Vlag gepakt!", "Probeer te verdedigen!", TOPIC);
     }
 
     /**
